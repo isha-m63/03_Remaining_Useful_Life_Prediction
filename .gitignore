@@ -1,0 +1,20 @@
+#Python cache
+__pycache__/
+*.pyc
+
+#Pytest
+.pytest_cache/
+
+#Jupyter
+.ipynb_checkpoints/
+
+#VSCode settings
+.vscode/
+
+#Other
+*.pdf
+*.txt
+*.log
+*.zip
+*npy
+*joblib
