@@ -11,6 +11,12 @@ __pycache__/
 #VSCode settings
 .vscode/
 
+#Environments
+.env
+.venv
+env/
+venv/
+
 #Other
 *.pdf
 *.txt
