@@ -2,4 +2,12 @@ pandas
 numpy
 seaborn
 matplotlib
--e .
+scipy
+scikit-learn
+#catboost
+xgboost
+#warnings 
+#os
+#sys
+
+#-e .    #Comment this when using pip install
