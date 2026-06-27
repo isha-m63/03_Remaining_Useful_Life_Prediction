@@ -3,19 +3,19 @@ ExperimentSplitter generates a calibration set out of the processed training dat
 
 Why this is a seaparate module (not part of DataTransformation):
 
-  DataTransformation's job: load raw data, apply PCA/scaling, save artifacts.
+  DataTransformation's job is to load raw data, apply PCA/scaling, save artifacts.
   It knows nothing about how many models you're training or whether you need
   conformal prediction.
 
-  ExperimentSplitter's job: given the already-transformed training data,
+  ExperimentSplitter's job is given the already-transformed training data,
   split it by engine_id into train_proper and calibration.
 
-  The split only exists because of conformal prediction. If you dropped
-  conformal from the project, ExperimentSplitter disappears entirely —
+  The split only exists because of conformal prediction. If you drop
+  conformal from the project, ExperimentSplitter disappears entirely
   DataTransformation stays unchanged. That's the test for whether a module
-  belongs here: can you remove it without touching anything else?
+  belongs here, can you remove it without touching anything else?
 
-WHY SPLIT BY ENGINE_ID (not by row index)?
+Why split by engine ID (not by row index)?
 
   Each engine is one independent degradation trajectory. The training data
   has ~20,000 rows from 100 engines. If you split by row index (e.g. first
@@ -29,7 +29,7 @@ WHY SPLIT BY ENGINE_ID (not by row index)?
   Engine-level split is the only correct approach for time series with
   multiple independent entities.
 
-WHERE THIS RUNS IN THE PIPELINE:
+Where this step is taken in the pipeline:
 
   DataIngestion → DataTransformation → [ExperimentSplitter] → ModelTrainer
                                              ↑
