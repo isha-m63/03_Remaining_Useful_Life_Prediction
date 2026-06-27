@@ -44,5 +44,6 @@ class DataTransformation:
             preprocessing_object = self.get_data_transformer_object()
             target_column_name = 'RUL'
 
-        except: 
-            pass
+        except Exception as e: 
+            raise CustomException(e, sys)
+        

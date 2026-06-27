@@ -131,3 +131,7 @@ dmypy.json
 
 #CSV files
 *.csv
+.artifacts
+
+#Some other files
+*data_ingestion_ideal_case.py
