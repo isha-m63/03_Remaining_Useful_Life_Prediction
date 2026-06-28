@@ -25,11 +25,11 @@ class DataTransformationConfig:
     rul_path: str = os.path.join('data/raw', 'RUL_FD001.txt')
 
     X_train_processed_path: str = os.path.join("artifacts", "X_train_processed.csv")
-    y_train_processed_path: str = os.path.join("artifacts", "y_train_processed.csv")
+    y_train_path: str = os.path.join("artifacts", "y_train.csv")
     #X_cal_processed_path: str = os.path.join("artifacts", "X_cal_processed.csv")
     #y_cal_processed_path: str = os.path.join("artifacts", "y_cal_processed.csv")
     X_test_processed_path:  str = os.path.join("artifacts", "X_test_processed.csv")
-    y_test_processed_path:  str = os.path.join("artifacts", "y_test_processed.csv")
+    y_test_path:  str = os.path.join("artifacts", "y_test.csv")
 
 
 
@@ -50,7 +50,8 @@ class DataTransformation:
     Essentially, 
     X_train_processed - scaled + PCA transformed   (model trains on this)
     y_train_processed - raw RUL values, no scaling (scaling RUL causes no issues but adds no benefit), , clipped to 125
-
+    (X_train_processed)
+    
     X_cal_processed - scaled + PCA transformed   (same pipeline, .transform() only)
     y_cal_processed - raw RUL values, clipped to 125
 
@@ -151,9 +152,9 @@ class DataTransformation:
             logging.info("Preprocessor saved - %s", self.data_transformation_config.preprocessor_obj_file_path)
 
             X_train_processed.to_csv(self.data_transformation_config.X_train_processed_path, index = False)
-            y_train.to_csv(self.data_transformation_config.y_train_processed_path, index = False, header= True)
+            y_train.to_csv(self.data_transformation_config.y_train_path, index = False, header= True)
             X_test_processed.to_csv(self.data_transformation_config.X_test_processed_path,  index = False)
-            y_test.to_csv(self.data_transformation_config.y_test_processed_path, index = False, header = True)
+            y_test.to_csv(self.data_transformation_config.y_test_path, index = False, header = True)
             logging.info("Processed CSVs saved to artifacts")
  
             return X_train_processed, y_train, X_test_processed, y_test
