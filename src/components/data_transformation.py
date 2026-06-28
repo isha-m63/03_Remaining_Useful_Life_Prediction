@@ -29,7 +29,7 @@ class DataTransformationConfig:
     #X_cal_processed_path: str = os.path.join("artifacts", "X_cal_processed.csv")
     #y_cal_processed_path: str = os.path.join("artifacts", "y_cal_processed.csv")
     X_test_processed_path:  str = os.path.join("artifacts", "X_test_processed.csv")
-    y_test_processed_:  str = os.path.join("artifacts", "y_test_processed.csv")
+    y_test_processed_path:  str = os.path.join("artifacts", "y_test_processed.csv")
 
 
 
@@ -113,7 +113,7 @@ class DataTransformation:
             
 
             #Add RUL labels to raw training data
-            train_df = self._add_rul_labels(train_df)
+            train_df = self.add_rul_labels(train_df)
             logging.info( "RUL labels added: range [%.0f, %.0f], cap=%d",
                          train_df["RUL"].min(), train_df["RUL"].max(), RUL_CAP)
 
@@ -129,7 +129,7 @@ class DataTransformation:
             y_test = y_test_raw["RUL"].clip(upper=RUL_CAP).reset_index(drop=True)
 
 
-            logging.info("unprocessed feature shapes: train: %s, test: %s", X_train_raw.shape, X_test_raw.shape)
+            logging.info("Unprocessed feature shapes: train: %s, test: %s", X_train_raw.shape, X_test_raw.shape)
 
             #Fitting the pipeline on training data, transforming training and test data
             logging.info('Obtaining preprocessing object')
@@ -138,7 +138,7 @@ class DataTransformation:
             X_test_arr  = pipeline.transform(X_test_raw)        #transform only
  
             explained = pipeline.named_steps["pca"].explained_variance_ratio_.cumsum()[-1]
-            logging.info("PCA: %d components explain %.1f%% variance", self.n_components, explained * 100)
+            logging.info("PCA: %d components explain %.1f%% variance", self.pca_n_components, explained * 100)
 
             #Convert to dataframes
             pc_cols = [f"PC{i+1}" for i in range(self.pca_n_components)]
@@ -146,14 +146,14 @@ class DataTransformation:
             X_test_processed  = pd.DataFrame(X_test_arr,  columns=pc_cols)
             os.makedirs("artifacts", exist_ok=True)
  
-            with open(self.config.preprocessor_obj_file_path, "wb") as f:
+            with open(self.data_transformation_config.preprocessor_obj_file_path, "wb") as f:
                 pickle.dump(pipeline, f)
-            logging.info("Preprocessor saved - %s", self.config.preprocessor_obj_file_path)
+            logging.info("Preprocessor saved - %s", self.data_transformation_config.preprocessor_obj_file_path)
 
-            X_train_processed.to_csv(self.config.X_train_processed_path, index=False)
-            y_train.to_csv(self.config.y_train_processed_path, index=False, header=True)
-            X_test_processed.to_csv(self.config.X_test_processed_path,   index=False)
-            y_test.to_csv(self.config.y_test_processed_path,    index=False, header=True)
+            X_train_processed.to_csv(self.data_transformation_config.X_train_processed_path, index = False)
+            y_train.to_csv(self.data_transformation_config.y_train_processed_path, index = False, header= True)
+            X_test_processed.to_csv(self.data_transformation_config.X_test_processed_path,  index = False)
+            y_test.to_csv(self.data_transformation_config.y_test_processed_path, index = False, header = True)
             logging.info("Processed CSVs saved to artifacts")
  
             return X_train_processed, y_train, X_test_processed, y_test
@@ -162,3 +162,12 @@ class DataTransformation:
         except Exception as e: 
             raise CustomException(e, sys)
         
+
+if __name__ == "__main__":
+    obj = DataTransformation()
+
+    obj.initiate_data_transformation(
+        train_data_raw_csv_path=obj.data_transformation_config.train_data_raw_csv_path,
+        test_data_raw_csv_path=obj.data_transformation_config.test_data_raw_csv_path,
+        rul_path=obj.data_transformation_config.rul_path,
+    )
