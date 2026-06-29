@@ -19,17 +19,17 @@ FEATURE_COLS = [c for c in SENSOR_COLS]
 
 @dataclass
 class DataTransformationConfig:
-    preprocessor_obj_file_path: str  = os.path.join('artifacts', 'preprocessor.pkl')
+    preprocessor_obj_file_path: str  = os.path.join('artifacts/pca', 'preprocessor.pkl')
     train_data_raw_csv_path: str = os.path.join('data/processed', 'train_set_001.csv')
     test_data_raw_csv_path: str = os.path.join('data/processed', 'test_set_001.csv')
     rul_path: str = os.path.join('data/raw', 'RUL_FD001.txt')
 
-    X_train_processed_path: str = os.path.join("artifacts", "X_train_processed.csv")
-    y_train_path: str = os.path.join("artifacts", "y_train.csv")
-    #X_cal_processed_path: str = os.path.join("artifacts", "X_cal_processed.csv")
-    #y_cal_processed_path: str = os.path.join("artifacts", "y_cal_processed.csv")
-    X_test_processed_path:  str = os.path.join("artifacts", "X_test_processed.csv")
-    y_test_path:  str = os.path.join("artifacts", "y_test.csv")
+    X_train_processed_path: str = os.path.join("artifacts/pca", "X_train_processed.csv")
+    y_train_path: str = os.path.join("artifacts/pca", "y_train.csv")
+    #X_cal_processed_path: str = os.path.join("artifacts/pca", "X_cal_processed.csv")
+    #y_cal_processed_path: str = os.path.join("artifacts/pca", "y_cal_processed.csv")
+    X_test_processed_path:  str = os.path.join("artifacts/pca", "X_test_processed.csv")
+    y_test_path:  str = os.path.join("artifacts/pca", "y_test.csv")
 
 
 
@@ -39,7 +39,7 @@ class DataTransformation:
       1. Add piecewise-linear RUL labels to the training set.
       2. Fit StandardScaler + PCA on training sensor rows only.
       3. Transform train and test sets using those fitted objects.
-      4. Save the fitted preprocessor to artifacts/ for inference reuse.
+      4. Save the fitted preprocessor to artifacts/pca/ for inference reuse.
  
     What this class does NOT do:
       - Split train into train_processed / calibration. That split only exists
@@ -145,7 +145,7 @@ class DataTransformation:
             pc_cols = [f"PC{i+1}" for i in range(self.pca_n_components)]
             X_train_processed = pd.DataFrame(X_train_arr, columns=pc_cols)
             X_test_processed  = pd.DataFrame(X_test_arr,  columns=pc_cols)
-            os.makedirs("artifacts", exist_ok=True)
+            os.makedirs("artifacts/pca", exist_ok=True)
  
             with open(self.data_transformation_config.preprocessor_obj_file_path, "wb") as f:
                 pickle.dump(pipeline, f)
@@ -155,7 +155,7 @@ class DataTransformation:
             y_train.to_csv(self.data_transformation_config.y_train_path, index = False, header= True)
             X_test_processed.to_csv(self.data_transformation_config.X_test_processed_path,  index = False)
             y_test.to_csv(self.data_transformation_config.y_test_path, index = False, header = True)
-            logging.info("Processed CSVs saved to artifacts")
+            logging.info("Processed CSVs saved to artifacts/pca")
  
             return X_train_processed, y_train, X_test_processed, y_test
  
@@ -166,7 +166,6 @@ class DataTransformation:
 
 if __name__ == "__main__":
     obj = DataTransformation()
-
     obj.initiate_data_transformation(
         train_data_raw_csv_path=obj.data_transformation_config.train_data_raw_csv_path,
         test_data_raw_csv_path=obj.data_transformation_config.test_data_raw_csv_path,

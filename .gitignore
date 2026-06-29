@@ -131,7 +131,7 @@ dmypy.json
 
 #CSV files
 *.csv
-.artifacts
+artifacts/*
 *.txt
 
 #Some other files
