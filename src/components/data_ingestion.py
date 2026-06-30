@@ -8,6 +8,9 @@ from sklearn.model_selection import train_test_split
 
 from dataclasses import dataclass
 
+from src.components.data_transformation import DataTransformation
+from src.components.data_transformation import DataTransformationConfig
+
 @dataclass
 class DataIngestionConfig:
     train_data_raw_path: str = os.path.join('data/raw', 'train_FD001.txt')
@@ -58,4 +61,11 @@ class DataIngestion:
 
 if __name__ == "__main__":
     obj = DataIngestion()
-    obj.inititiate_data_ingestion()
+    train_set, test_set = obj.inititiate_data_ingestion()
+ 
+    data_transformation = DataTransformation()
+    X_train, y_train, X_test, y_test = data_transformation.initiate_data_transformation(
+        train_data_raw_csv_path=train_set,
+        test_data_raw_csv_path=test_set,
+        rul_path=data_transformation.data_transformation_config.rul_path,
+    )
