@@ -12,6 +12,7 @@ from sklearn.decomposition import PCA
 from src.exception import CustomException
 from src.logger import logging
 from configs.data_constants_config import RUL_CAP, PCA_N_COMPONENETS
+from src.utils import save_object
 
 DROP_SENSORS = ["s1", "s5", "s6", "s10", "s16", "s18", "s19"]
 SENSOR_COLS  = [f"s{i}" for i in range(1, 22)]
@@ -147,7 +148,11 @@ class DataTransformation:
             X_train_processed = pd.DataFrame(X_train_arr, columns=pc_cols)
             X_test_processed  = pd.DataFrame(X_test_arr,  columns=pc_cols)
             os.makedirs("artifacts", exist_ok=True)
- 
+
+            '''save_object(
+                file_path = self.data_transformation_config.preprocessor_obj_file_path,
+                obj = pipeline
+            )'''
             with open(self.data_transformation_config.preprocessor_obj_file_path, "wb") as f:
                 pickle.dump(pipeline, f)
             logging.info("Preprocessor saved - %s", self.data_transformation_config.preprocessor_obj_file_path)
