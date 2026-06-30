@@ -3,7 +3,7 @@ ExperimentSplitter generates a calibration set out of the processed training dat
 
 Why this is a seaparate module (not part of DataTransformation):
 
-  DataTransformation's job is to load raw data, apply PCA/scaling, save artifacts.
+  DataTransformation's job is to load raw data, apply ICA/scaling, save artifacts/ica.
   It knows nothing about how many models you're training or whether you need
   conformal prediction.
 
@@ -33,7 +33,7 @@ Where this step is taken in the pipeline:
 
   DataIngestion - DataTransformation - [ExperimentSplitter] - ModelTrainer
                                              
-                                   runs here, after PCA is applied,
+                                   runs here, after ICA is applied,
                                    before any model sees the data
 """
 
@@ -47,14 +47,14 @@ from src.logger import logging
 
 @dataclass
 class ExperimentSplitterConfig: 
-    X_train_proper_path: str = os.path.join("artifacts", "X_train_proper.csv")     #Use this for model training
-    y_train_proper_path: str = os.path.join("artifacts", "y_train_proper.csv")     #Use this
-    X_cal_path: str = os.path.join("artifacts", "X_cal.csv")
-    y_cal_path: str = os.path.join("artifacts", "y_cal.csv")
+    X_train_proper_path: str = os.path.join("artifacts/ica", "X_train_proper.csv")     #Use this for model training
+    y_train_proper_path: str = os.path.join("artifacts/ica", "y_train_proper.csv")     #Use this
+    X_cal_path: str = os.path.join("artifacts/ica", "X_cal.csv")
+    y_cal_path: str = os.path.join("artifacts/ica", "y_cal.csv")
 
     train_data_raw_csv_path: str = os.path.join('data/processed', 'train_set_001.csv')
-    X_train_processed_path: str = os.path.join("artifacts", "X_train_processed.csv")
-    y_train_path: str = os.path.join("artifacts", "y_train.csv")
+    X_train_processed_path: str = os.path.join("artifacts/ica", "X_train_processed.csv")
+    y_train_path: str = os.path.join("artifacts/ica", "y_train.csv")
     calibration_fraction: float = 0.2   #Fraction of engines held out for calibration
     random_seed: int = 42
 
@@ -63,7 +63,7 @@ class ExperimentSplitter:
     Splits the processed training data into train_proper and calibration,
     by engine_id.
 
-    Inputs:  X_train_processed (PC1..PCn), y_train (RUL), original train_df (for engine_IDs saved in train_data_raw_csv_path)
+    Inputs:  X_train_processed (IC1..ICn), y_train (RUL), original train_df (for engine_IDs saved in train_data_raw_csv_path)
     Outputs: X_train_proper, y_train_proper, X_cal, y_cal
     """
     def __init__(self):
@@ -74,9 +74,9 @@ class ExperimentSplitter:
         Split processed training data by engine_id.
 
         Args:
-            X_train_processed: Processed feature matrix (PC1..PCn), shape (n_rows, n_pcs). Must have the same row order as train_df_raw.
+            X_train_processed: Processed feature matrix (IC1..ICn), shape (n_rows, n_ICs). Must have the same row order as train_df_raw.
             y_train: RUL targets, shape (n_rows,). Same row order.
-            train_df_raw: The original (pre-PCA) train dataframe, needed only for the engine_id column. Row order must match X_train.
+            train_df_raw: The original (pre-ICA) train dataframe, needed only for the engine_id column. Row order must match X_train.
 
         Returns:
             X_train_proper, y_train_proper, X_cal, y_cal
@@ -109,14 +109,14 @@ class ExperimentSplitter:
           X_cal = X_train[cal_mask].reset_index(drop=True)
           y_cal = y_train[cal_mask].reset_index(drop=True)
 
-          logging.info("Split sizes — train_proper: %d rows, calibration: %d rows", len(X_train_proper), len(X_cal))
+          logging.info("Split sizes - train_proper: %d rows, calibration: %d rows", len(X_train_proper), len(X_cal))
           
-          os.makedirs("artifacts", exist_ok=True)
+          os.makedirs("artifacts/ica", exist_ok=True)
           X_train_proper.to_csv(self.experiment_splitter_config.X_train_proper_path, index=False)
           y_train_proper.to_csv(self.experiment_splitter_config.y_train_proper_path, index=False, header=True)
           X_cal.to_csv(self.experiment_splitter_config.X_cal_path, index=False)
           y_cal.to_csv(self.experiment_splitter_config.y_cal_path, index=False, header=True)
-          logging.info("Calibration split saved to artifacts/")
+          logging.info("Calibration split saved to artifacts/ica/")
 
           return X_train_proper, y_train_proper, X_cal, y_cal
       
