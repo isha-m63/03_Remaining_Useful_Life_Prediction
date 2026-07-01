@@ -16,7 +16,7 @@ from src.exception import CustomException
 
 '''
 Models used: Linear Regression, Random Forest Regressor, SVR, XGBoost Regressor
-Incomplete: Gaussian Processes
+Note: GP training should not be included here.
 '''
 @dataclass
 class ModelTrainerConfig: 
@@ -49,11 +49,31 @@ class ModelTrainer:
                 "Random Forest": RandomForestRegressor(),
                 "SVR": SVR(),
                 "XGBRegressor": XGBRegressor(),
-                #"Gaussian Process": #INCOMPLETE HERE
             }
 
+            params = {
+                "Linear Regression":{},
+                "Random Forest":{
+                    # 'criterion':['squared_error', 'friedman_mse', 'absolute_error', 'poisson'],
+                 
+                    # 'max_features':['sqrt','log2',None],
+                    'n_estimators': [8,16,32,64,128,256]
+                },
+                "SVR":{
+                    'kernel':['linear','poly','rbf','sigmoid'],
+                    'C':[0.1,0.5,1, 2, 3],
+                    'degree':[2,3,4],
+                },
+                "XGBRegressor":{
+                    'learning_rate':[.1,.01,.05,.001],
+                    'n_estimators': [8,16,32,64,128,256]
+                },
+               
+            }
+
+
             model_report: dict = evaluate_model (
-                X_train = X_train, y_train = y_train, X_test = X_test, y_test = y_test, models = models
+                X_train = X_train, y_train = y_train, X_test = X_test, y_test = y_test, models = models, param = params
             ) 
 
             print("Model Report:")
