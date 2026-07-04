@@ -6,7 +6,7 @@ import pandas as pd
 import dill
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import GridSearchCV
-from config.data_constants_config import ALPHAgi
+from configs.data_constants_config import ALPHA
 from src.exception import CustomException
 
 
