@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 import numpy as np
@@ -5,6 +6,7 @@ import pandas as pd
 import dill
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import GridSearchCV
+from config.data_constants_config import ALPHAgi
 from src.exception import CustomException
 
 
@@ -65,7 +67,7 @@ def evaluate_model (X_train, y_train, X_test, y_test, models, param):
 def get_best_model(report: dict):
     try:
         """
-        Rank by test_rmse (asc) → test_mae (asc) → test_r2 (desc).
+        Rank by test_rmse (asc) - test_mae (asc) - test_r2 (desc).
         Returns (best_model_name, sorted_df_of_all_models).
         """
         rows = []
@@ -92,3 +94,79 @@ def get_best_model(report: dict):
     except Exception as e: 
         raise CustomException(e, sys)
             
+
+def evaluate_conformal(
+    models: dict,           # {model_name: fitted_sklearn_model}
+    X_cal: pd.DataFrame,
+    y_cal: np.ndarray,
+    X_test: pd.DataFrame,
+    y_test: np.ndarray,
+    alpha: float = ALPHA,
+    save_path: str = "artifacts/conformal_results.csv",
+) -> pd.DataFrame:
+    """
+    For each model in `models`:
+      1. Compute calibration residuals  Ri = |y_cal_i - y_hat_cal_i|
+      2. Compute q_hat = ⌈(1-alpha)(n+1)⌉ / n  quantile of residuals
+         (finite-sample corrected quantile, eq. 6/7, Tibshirani notes)
+      3. Form test intervals  [y_hat_test - q_hat,  y_hat_test + q_hat]
+         (eq. 11, Tibshirani notes)
+      4. Record empirical coverage and average width
+         (eq. 12, Tibshirani notes)
+ 
+    Returns a DataFrame with one row per model, sorted by avg_width
+    among models that meet the coverage guarantee.
+    """
+    try:
+        n = len(y_cal)
+        # finite-sample quantile level  (Tibshirani eq. 6 / 7)
+        level = min(np.ceil((1 - alpha) * (n + 1)) / n, 1.0)
+ 
+        rows = []
+        for name, model in models.items():
+            logging.info("Conformal evaluation: %s", name)
+ 
+            # --- calibration ---
+            y_hat_cal = model.predict(X_cal)
+            residuals = np.abs(y_cal - y_hat_cal)
+            q_hat = np.quantile(residuals, level)
+ 
+            # --- test intervals (eq. 11) ---
+            y_hat_test = model.predict(X_test)
+            lower = y_hat_test - q_hat
+            upper = y_hat_test + q_hat
+ 
+            # --- metrics (eq. 12) ---
+            coverage = float(np.mean((y_test >= lower) & (y_test <= upper)))
+            avg_width = float(np.mean(upper - lower))
+ 
+            rows.append({
+                "model":     name,
+                "q_hat":     q_hat,
+                "coverage":  coverage,
+                "avg_width": avg_width,
+                # store arrays for plotting
+                "_lower":    lower,
+                "_upper":    upper,
+                "_point":    y_hat_test,
+            })
+ 
+        results_df = pd.DataFrame(rows)
+ 
+        # rank: valid models first (coverage >= 1-alpha), then by width
+        nominal = 1 - alpha
+        results_df["_valid"] = results_df["coverage"] >= nominal
+        results_df = results_df.sort_values(
+            ["_valid", "avg_width"], ascending=[False, True]
+        ).reset_index(drop=True)
+ 
+        # save the public columns
+        public_cols = ["model", "q_hat", "coverage", "avg_width"]
+        results_df[public_cols].to_csv(save_path, index=False)
+        logging.info("Conformal results saved to %s", save_path)
+ 
+        return results_df
+ 
+    except Exception as e:
+        raise CustomException(e, sys)
+ 
