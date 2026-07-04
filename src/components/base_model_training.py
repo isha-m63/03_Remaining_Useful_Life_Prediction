@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from xgboost import XGBRegressor
 
-from src.utils import save_object, evaluate_model
+from src.utils import save_object, evaluate_model, get_best_model
 from src.logger import logging
 from src.exception import CustomException
 
@@ -21,6 +21,8 @@ Note: GP training should not be included here.
 @dataclass
 class ModelTrainerConfig: 
     trained_model_file_path = os.path.join('artifacts', 'model.pkl')
+    top5_results_path: str = os.path.join('artifacts', 'top5_models.csv')
+
 
 
 class ModelTrainer: 
@@ -76,42 +78,34 @@ class ModelTrainer:
                 X_train = X_train, y_train = y_train, X_test = X_test, y_test = y_test, models = models, param = params
             ) 
 
-            print("Model Report:")
-            print(model_report)
+            best_model_name, ranking_df = get_best_model(model_report)
 
-            #Get best model score from dictionary
-            best_model_score = max(sorted(model_report.values()))
+            # save top-5 to csv
+            top5 = ranking_df.head(5)
+            top5.to_csv(self.model_trainer_config.top5_results_path, index=False)
+            logging.info("Top-5 models saved to %s", self.model_trainer_config.top5_results_path)
 
-            #Get best model name from dictionary key
-            best_model_name = list(model_report.keys())[
-                list(model_report.values()).index(best_model_score)
-            ]
+            print("\nTop-5 models (ranked by RMSE → MAE → R²):")
+            print(top5.to_string(index=False))
+
+            # --- threshold check on RMSE instead of R² ---
+            best_metrics = model_report[best_model_name]
+            print(f"\nBest model : {best_model_name}")
+            print(f"  test RMSE: {best_metrics['test_rmse']:.4f}")
+            print(f"  test MAE : {best_metrics['test_mae']:.4f}")
+            print(f"  test R²  : {best_metrics['test_r2']:.4f}")
+
+            if best_metrics["test_r2"] < 0.6:
+                raise CustomException("No best model found — R² below 0.6")
+
             best_model = models[best_model_name]
-
-            print(f"Best Model: {best_model_name}")
-            print(f"Best Test R sqaure: {best_model_score:.4f}")
-
-            if best_model_score < 0.6: 
-                raise CustomException ("No best model found")
-            
-            logging.info(f"Best found model on both training and testing dataset")
-
-            '''
-            #Load preprocessing file if new data is coming
-            preprocessor_path = #INCOMPLETE HERE
-            
-            '''
-            
             save_object(
-                file_path = self.model_trainer_config.trained_model_file_path, 
-                obj = best_model
+                file_path=self.model_trainer_config.trained_model_file_path,
+                obj=best_model,
             )
+            logging.info("Best model saved: %s", best_model_name)
 
-            #Predicted output for test data
-            predicted = best_model.predict(X_test)
-            r2_square = r2_score(y_test, predicted)
-
-            return r2_square
+            return best_model_name, best_model, best_metrics
 
 
         except Exception as e:
