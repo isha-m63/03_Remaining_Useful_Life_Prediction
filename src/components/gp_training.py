@@ -62,18 +62,17 @@ class GPModelTrainer:
                         Matern(length_scale=1.0, length_scale_bounds=(0.1, 10), nu=2.5), 
                         Matern(length_scale=2, length_scale_bounds=(0.1, 10), nu=2.5)
                     ],
-                    'alpha': [0.05, 0.1, 0.5] # Value added to the diagonal of the kernel matrix during fitting
+                    'alpha': [0.05, 0.1, 0.5, 1] # Value added to the diagonal of the kernel matrix during fitting
                 }
             }
 
-            # Utilizing your existing utils structure for evaluation
             model_report: dict = evaluate_model(
                 X_train = X_train, y_train = y_train, X_test = X_test, y_test = y_test, models = models, param = params
             ) 
 
             best_model_name, ranking_df = get_best_model(model_report)
 
-            # Save top-2 iterations to csv (or as many as evaluated if total combos < 5)
+            #Save top-2 GP configurations to CSV
             top2 = ranking_df.head(2)
             top2.to_csv(self.model_trainer_config.top2_results_path, index=False)
             logging.info("Top 2 GP configs saved to %s", self.model_trainer_config.top2_results_path)
