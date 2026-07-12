@@ -6,8 +6,8 @@ scipy
 scikit-learn
 dill
 xgboost
-#warnings 
-#os
-#sys
+fastapi[standard]
+base64
 
 #-e .    #Comment this when using pip install
+#warnings 
