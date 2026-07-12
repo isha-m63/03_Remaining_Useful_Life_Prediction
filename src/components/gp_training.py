@@ -14,7 +14,7 @@ from src.exception import CustomException
 @dataclass
 class GPModelTrainerConfig: 
     trained_model_file_path = os.path.join('artifacts', 'gp_model.pkl')
-    top5_results_path: str = os.path.join('artifacts', 'top2_gp_models.csv')
+    top2_results_path: str = os.path.join('artifacts', 'top2_gp_models.csv')
 
 
 class GPModelTrainer: 
@@ -31,26 +31,38 @@ class GPModelTrainer:
             X_test = pd.read_csv(X_test_path)
             y_test = pd.read_csv(y_test_path).values.ravel()
  
-            logging.info(
-                "GPRegressorTrainer: training on %d rows, %d features",
-                len(X_train), X_train.shape[1],
-            )
+            logging.info("Original data size: %d rows", len(X_train))
 
-            # We use GaussianProcessRegressor as the base model
+            #Downsampling to prevent OOM (Killed) crash for large datasets
+            if len(X_train) > 2500:
+                logging.info("Downsampling data to 2500 rows to prevent Out-Of-Memory (Killed) crash.")
+                step = len(X_train) // 2500
+                X_train = X_train.iloc[::step].reset_index(drop=True)
+                y_train = y_train[::step]
+            
+            if len(X_test) > 1000:
+                step_test = len(X_test) // 1000
+                X_test = X_test.iloc[::step_test].reset_index(drop=True)
+                y_test = y_test[::step_test]
+
+            logging.info("GPRegressorTrainer: training on %d rows, %d features",
+                len(X_train), X_train.shape[1])
+
+            #We use GaussianProcessRegressor as the base model
             models = {
                 "Gaussian Process": GaussianProcessRegressor(normalize_y=True, random_state=42)
             }
 
-            # Hyperparameter space mapping kernel choices and regularization (alpha)
+            #Hyperparameter space mapping kernel choices and regularization (alpha)
             params = {
                 "Gaussian Process": {
                     'kernel': [
-                        RBF(length_scale=1.0, length_scale_bounds=(0.1, 10)),
-                        RBF(length_scale=2, length_scale_bounds=(0.1, 10)),
+                        #RBF(length_scale=1.0, length_scale_bounds=(0.1, 10)),
+                        #RBF(length_scale=2, length_scale_bounds=(0.1, 10)),
                         Matern(length_scale=1.0, length_scale_bounds=(0.1, 10), nu=2.5), 
                         Matern(length_scale=2, length_scale_bounds=(0.1, 10), nu=2.5)
                     ],
-                    'alpha': [0.01, 0.05, 0.1, 0.5, 1.0] # Value added to the diagonal of the kernel matrix during fitting
+                    'alpha': [0.05, 0.1, 0.5] # Value added to the diagonal of the kernel matrix during fitting
                 }
             }
 
