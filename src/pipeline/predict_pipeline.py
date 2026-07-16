@@ -9,7 +9,7 @@ import pandas as pd
  
 from configs.data_constants_config import ALPHA
 from src.components.conformal_calibration import ConformalCalibrator
-from src.components.conformal_plots import generate_prediction_plot
+from src.components.conformal_plots import ConformalPlots
 from src.exception import CustomException
 from src.logger import logging
  
