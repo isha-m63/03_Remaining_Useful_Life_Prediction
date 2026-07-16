@@ -136,3 +136,4 @@ artifacts/*
 
 #Some other files
 *data_ingestion_ideal_case.py
+*db
