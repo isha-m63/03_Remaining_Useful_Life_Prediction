@@ -5,16 +5,15 @@ import pandas as pd
 from dataclasses import dataclass
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, Matern
+from sklearn.gaussian_process.kernels import Matern, ConstantKernel, WhiteKernel
 
-from src.utils import save_object, evaluate_model, get_best_model
+from src.utils import save_object, evaluate_model
 from src.logger import logging
 from src.exception import CustomException
 
 @dataclass
 class GPModelTrainerConfig: 
     trained_model_file_path = os.path.join('artifacts', 'gp_model.pkl')
-    top2_results_path: str = os.path.join('artifacts', 'top2_gp_models.csv')
 
 
 class GPModelTrainer: 
@@ -34,72 +33,46 @@ class GPModelTrainer:
             logging.info("Original data size: %d rows", len(X_train))
 
             #Downsampling to prevent OOM (Killed) crash for large datasets
-            if len(X_train) > 2500:
-                logging.info("Downsampling data to 2500 rows to prevent Out-Of-Memory (Killed) crash.")
-                step = len(X_train) // 2500
-                X_train = X_train.iloc[::step].reset_index(drop=True)
-                y_train = y_train[::step]
-            
-            if len(X_test) > 1000:
-                step_test = len(X_test) // 1000
-                X_test = X_test.iloc[::step_test].reset_index(drop=True)
-                y_test = y_test[::step_test]
+            X_train_gp = X_train.sample(n=2500, random_state=42)
+            y_train_gp = y_train[X_train_gp.index]
 
             logging.info("GPRegressorTrainer: training on %d rows, %d features",
-                len(X_train), X_train.shape[1])
+                len(X_train_gp), X_train_gp.shape[1])
 
-            #We use GaussianProcessRegressor as the base model
-            models = {
-                "Gaussian Process": GaussianProcessRegressor(normalize_y=True, random_state=42)
-            }
+            # Tuned kernel (replace values below with your notebook's best values if different)
+            length_scales = [0.5] * X_train_gp.shape[1]
 
-            #Hyperparameter space mapping kernel choices and regularization (alpha)
-            params = {
-                "Gaussian Process": {
-                    'kernel': [
-                        #RBF(length_scale=1.0, length_scale_bounds=(0.1, 10)),
-                        #RBF(length_scale=2, length_scale_bounds=(0.1, 10)),
-                        Matern(length_scale=1.0, length_scale_bounds=(0.1, 10), nu=2.5), 
-                        Matern(length_scale=2, length_scale_bounds=(0.1, 10), nu=2.5)
-                    ],
-                    'alpha': [0.05, 0.1, 0.5, 1] # Value added to the diagonal of the kernel matrix during fitting
-                }
-            }
+            kernel = (
+                ConstantKernel(constant_value=100.0)
+                * Matern(length_scale=length_scales, nu=2.5)
+                + WhiteKernel(
+                    noise_level=1.0,
+                    noise_level_bounds=(1e-3, 1e3),
+                )
+            )
 
-            model_report: dict = evaluate_model(
-                X_train = X_train, y_train = y_train, X_test = X_test, y_test = y_test, models = models, param = params
-            ) 
+            gp_model = GaussianProcessRegressor(
+                kernel=kernel,
+                alpha=0.01,
+                normalize_y=True,
+                n_restarts_optimizer=5,
+                random_state=42,
+            )
 
-            best_model_name, ranking_df = get_best_model(model_report)
+            logging.info("Training Gaussian Process model")
+            gp =  gp_model.fit(X_train_gp, y_train_gp)
 
-            #Save top-2 GP configurations to CSV
-            top2 = ranking_df.head(2)
-            top2.to_csv(self.model_trainer_config.top2_results_path, index=False)
-            logging.info("Top 2 GP configs saved to %s", self.model_trainer_config.top2_results_path)
-
-            print("\nTop configurations (ranked by RMSE - MAE - R2):")
-            print(top2.to_string(index=False))
-
-            #Threshold check
-            best_metrics = model_report[best_model_name]
-            print(f"\nBest model configuration: {best_model_name}")
-            print(f"  test RMSE: {best_metrics['test_rmse']:.4f}")
-            print(f"  test MAE : {best_metrics['test_mae']:.4f}")
-            print(f"  test R2  : {best_metrics['test_r2']:.4f}")
-
-            if best_metrics["test_r2"] < 0.6:
-                raise CustomException("No suitable GP model configuration found - R2 below 0.6")
-
-            best_model = models[best_model_name]
+            logging.info("Training completed")
             
             # Save the trained object as 'gp_model.pkl'
             save_object(
                 file_path=self.model_trainer_config.trained_model_file_path,
-                obj=best_model,
+                obj=gp
             )
-            logging.info("Best GP model saved successfully.")
 
-            return best_model_name, best_model, best_metrics
+            logging.info( "Gaussian Process model saved to %s",self.model_trainer_config.trained_model_file_path)
+
+            return gp
 
         except Exception as e:
             raise CustomException(e, sys)
