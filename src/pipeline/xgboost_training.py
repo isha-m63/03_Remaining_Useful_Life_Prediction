@@ -48,7 +48,7 @@ class XGBoostModelTrainer:
                 obj=xgboost
             )
 
-            logging.info( "Gaussian Process model saved to %s",self.model_trainer_config.trained_model_file_path)
+            logging.info( "XGBoost model saved to %s",self.model_trainer_config.trained_model_file_path)
 
             return xgboost
 
