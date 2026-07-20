@@ -32,9 +32,22 @@ class GPModelTrainer:
  
             logging.info("Original data size: %d rows", len(X_train))
 
+            X_train_gp = X_train.copy()
+            y_train_gp = y_train.copy()
+
+            X_test_gp = X_test.copy()
+            y_test_gp = y_test.copy()
+
             #Downsampling to prevent OOM (Killed) crash for large datasets
-            X_train_gp = X_train.sample(n=2500, random_state=42)
-            y_train_gp = y_train[X_train_gp.index]
+            if len(X_train_gp) > 2500:
+                step = 5
+                X_train_gp = X_train_gp.iloc[::step].reset_index(drop=True)
+                y_train_gp = y_train_gp[::step]
+
+            if len(X_test_gp) > 1000:
+                step = 5
+                X_test_gp = X_test_gp.iloc[::step].reset_index(drop=True)
+                y_test_gp = y_test_gp[::step]
 
             logging.info("GPRegressorTrainer: training on %d rows, %d features",
                 len(X_train_gp), X_train_gp.shape[1])
