@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Matern, ConstantKernel, WhiteKernel
-
+from configs.data_constants_config import LENGTH_SCALES, NU, DOWNSAMPLING_STEP
 from src.utils import save_object, evaluate_model
 from src.logger import logging
 from src.exception import CustomException
@@ -45,7 +45,7 @@ class GPModelTrainer:
                 y_train_gp = y_train_gp[::step]
 
             if len(X_test_gp) > 1000:
-                step = 5
+                step = DOWNSAMPLING_STEP
                 X_test_gp = X_test_gp.iloc[::step].reset_index(drop=True)
                 y_test_gp = y_test_gp[::step]
 
@@ -53,11 +53,11 @@ class GPModelTrainer:
                 len(X_train_gp), X_train_gp.shape[1])
 
             # Tuned kernel (replace values below with your notebook's best values if different)
-            length_scales = [0.5] * X_train_gp.shape[1]
+            length_scales = [LENGTH_SCALES] * X_train_gp.shape[1]
 
             kernel = (
                 ConstantKernel(constant_value=100.0)
-                * Matern(length_scale=length_scales, nu=2.5)
+                * Matern(length_scale = length_scales, nu = NU)
                 + WhiteKernel(
                     noise_level=1.0,
                     noise_level_bounds=(1e-3, 1e3),
@@ -65,11 +65,11 @@ class GPModelTrainer:
             )
 
             gp_model = GaussianProcessRegressor(
-                kernel=kernel,
-                alpha=0.01,
-                normalize_y=True,
-                n_restarts_optimizer=5,
-                random_state=42,
+                kernel = kernel,
+                alpha = 0.01,
+                normalize_y = True,
+                n_restarts_optimizer = 5,
+                random_state = 42,
             )
 
             logging.info("Training Gaussian Process model")
