@@ -5,54 +5,34 @@ stages:
     deps:
       - src/components/data_ingestion.py
     outs: 
-      - data/raw
       - data/processed
+ 
 
   data_transformation:
       cmd: python src/components/data_transformation.py
       deps:
+        - data/raw
         - data/processed
         - configs/data_constants_config.py 
         - src/components/data_transformation.py
-      outs: 
-        - data/artifacts
+      outs:
+        - artifacts
+     
 
   experiment_splitter:
-      cmd: python src/components/experiment_splittter.py
+      cmd: python src/components/experiment_splitter.py
       deps: 
         - data/processed
-        - data/artifacts
-        - src/components/experiment_splittter.py
-      outs: 
-        - data/artifacts
+        - artifacts
+        - src/components/experiment_splitter.py
+      
 
   ml_model_trainer:
       cmd: python src/pipeline/xgboost_training.py
       deps:
-        - data/artifacts
+        - artifacts
         - configs/data_constants_config.py
         - src/pipeline/xgboost_training.py
-      outs: 
-        - data/artifacts
-
-  conformal_calibration_for_ml_pred_uncertainty:
-      cmd:
-      deps:
-        - 
-      outs: 
-        - 
+      
   
-  gp_model_trainer:
-      cmd: python src/pipeline/gp_training.py
-      deps:
-        - configs/data_constants_config.py
-        - src/pipeline/gp_training.py
-      outs: 
-        - 
-
-  model_evaluation: 
-      cmd:
-      deps:
-        - 
-      metrics: 
-        - 
+    

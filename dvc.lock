@@ -1,0 +1,75 @@
+schema: '2.0'
+stages:
+  data_ingestion:
+    cmd: python src/components/data_ingestion.py
+    deps:
+    - path: src/components/data_ingestion.py
+      hash: md5
+      md5: 4f465ed4d17a6893cecaf89c2dba45bf
+      size: 3054
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: 6e317b5482e72dd0cf35c431a4161f1c.dir
+      size: 5548832
+      nfiles: 2
+  data_transformation:
+    cmd: python src/components/data_transformation.py
+    deps:
+    - path: configs/data_constants_config.py
+      hash: md5
+      md5: 61181bc672e54919a1ffa4844e6718ca
+      size: 216
+    - path: data/processed
+      hash: md5
+      md5: 6e317b5482e72dd0cf35c431a4161f1c.dir
+      size: 5548832
+      nfiles: 2
+    - path: data/raw
+      hash: md5
+      md5: 1bcaab131e96737ba4ebcfd35c360efc.dir
+      size: 45350831
+      nfiles: 15
+    - path: src/components/data_transformation.py
+      hash: md5
+      md5: d35ae300688842f684eb5527c7163e2d
+      size: 7935
+    outs:
+    - path: artifacts
+      hash: md5
+      md5: 539751ccf80dbc679e7ebf1d1a07595b.dir
+      size: 4181619
+      nfiles: 5
+  experiment_splitter:
+    cmd: python src/components/experiment_splitter.py
+    deps:
+    - path: artifacts
+      hash: md5
+      md5: 539751ccf80dbc679e7ebf1d1a07595b.dir
+      size: 4181619
+      nfiles: 5
+    - path: data/processed
+      hash: md5
+      md5: 6e317b5482e72dd0cf35c431a4161f1c.dir
+      size: 5548832
+      nfiles: 2
+    - path: src/components/experiment_splitter.py
+      hash: md5
+      md5: 447c89deaa1a541fc7430f6cb699185c
+      size: 6050
+  ml_model_trainer:
+    cmd: python src/pipeline/xgboost_training.py
+    deps:
+    - path: artifacts
+      hash: md5
+      md5: 539751ccf80dbc679e7ebf1d1a07595b.dir
+      size: 4181619
+      nfiles: 5
+    - path: configs/data_constants_config.py
+      hash: md5
+      md5: 61181bc672e54919a1ffa4844e6718ca
+      size: 216
+    - path: src/pipeline/xgboost_training.py
+      hash: md5
+      md5: a74c3e92b1e0b9181326183f4f391725
+      size: 2285

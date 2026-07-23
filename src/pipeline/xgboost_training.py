@@ -56,11 +56,11 @@ class XGBoostModelTrainer:
             raise CustomException(e, sys)
 
 
-if __name__ == "__main__":
+'''if __name__ == "__main__":
     trainer = XGBoostModelTrainer()
     trainer.initiate_model_trainer(
         X_train_proper_path = "artifacts/X_train_proper.csv",
         y_train_proper_path = "artifacts/y_train_proper.csv",
         X_test_path = "artifacts/X_test_processed.csv",
         y_test_path = "artifacts/y_test.csv"
-    )
+    )'''

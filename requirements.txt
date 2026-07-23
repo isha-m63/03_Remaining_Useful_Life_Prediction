@@ -9,6 +9,7 @@ xgboost
 fastapi[standard]
 #base64
 mlflow
+dvc
 
 #-e .    #Comment this when using pip install
 #warnings 
