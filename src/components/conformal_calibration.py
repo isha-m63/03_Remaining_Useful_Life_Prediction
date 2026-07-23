@@ -35,7 +35,7 @@ from src.logger import logging
 
 @dataclass
 class ConformalCalibratorConfig:
-    model_path: str = os.path.join("artifacts", "model.pkl")
+    model_path: str = os.path.join("models", "xgboost_model.pkl")
     X_cal_path: str = os.path.join("artifacts", "X_cal.csv")
     y_cal_path: str = os.path.join("artifacts", "y_cal.csv")
     X_test_path: str = os.path.join("artifacts", "X_test_processed.csv")
@@ -104,7 +104,7 @@ class ConformalCalibrator:
         Evaluate conformal prediction intervals using previously calibrated residuals.
         """
         try:
-            logging.info("Evaluating conformal intervals...")
+            logging.info("Evaluating conformal intervals")
 
             #Load offline residuals
             self.load_residuals()
@@ -162,7 +162,7 @@ class ConformalCalibrator:
 
 
 
-'''
+
 if __name__ == "__main__":
     config = ConformalCalibratorConfig()
 
@@ -193,4 +193,3 @@ if __name__ == "__main__":
         alpha=ALPHA,
         save_path="artifacts/conformal_results.csv")
 
-'''

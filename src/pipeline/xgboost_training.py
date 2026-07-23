@@ -13,7 +13,7 @@ from configs.data_constants_config import LEARNING_RATE, N_ESTIMATORS
 
 @dataclass
 class XGBoostModelTrainerConfig: 
-    trained_model_file_path = os.path.join('artifacts', 'xgboost_model.pkl')
+    trained_model_file_path = os.path.join('models', 'xgboost_model.pkl')
 
 
 class XGBoostModelTrainer: 
@@ -42,7 +42,7 @@ class XGBoostModelTrainer:
 
             logging.info("Training completed")
             
-            # Save the trained object as 'gp_model.pkl'
+            # Save the trained object as 'xgboost_model.pkl'
             save_object(
                 file_path=self.model_trainer_config.trained_model_file_path,
                 obj=xgboost
@@ -56,11 +56,11 @@ class XGBoostModelTrainer:
             raise CustomException(e, sys)
 
 
-'''if __name__ == "__main__":
+if __name__ == "__main__":
     trainer = XGBoostModelTrainer()
     trainer.initiate_model_trainer(
         X_train_proper_path = "artifacts/X_train_proper.csv",
         y_train_proper_path = "artifacts/y_train_proper.csv",
         X_test_path = "artifacts/X_test_processed.csv",
         y_test_path = "artifacts/y_test.csv"
-    )'''
+    )

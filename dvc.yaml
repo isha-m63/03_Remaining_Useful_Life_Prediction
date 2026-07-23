@@ -33,6 +33,14 @@ stages:
         - artifacts
         - configs/data_constants_config.py
         - src/pipeline/xgboost_training.py
+      outs:
+        -  models/xgboost_model.pkl
       
-  
+  conformal_calibrator:
+      cmd: python src/components/conformal_calibration.py
+      deps:
+        - models
+        - artifacts
+        - src/components/conformal_calibration.py
+
     

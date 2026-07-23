@@ -124,14 +124,13 @@ class ExperimentSplitter:
             raise CustomException(e, sys)
 
 
-'''if __name__ == "__main__":
+if __name__ == "__main__":
     obj = ExperimentSplitter()
     obj.initiate_data_split(
         X_train_processed_path = obj.experiment_splitter_config.X_train_processed_path, 
         y_train_path = obj.experiment_splitter_config.y_train_path, 
         train_data_raw_csv_path = obj.experiment_splitter_config.train_data_raw_csv_path
     )
-    '''
 
 
 

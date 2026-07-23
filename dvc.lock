@@ -45,9 +45,9 @@ stages:
     deps:
     - path: artifacts
       hash: md5
-      md5: 539751ccf80dbc679e7ebf1d1a07595b.dir
-      size: 4181619
-      nfiles: 5
+      md5: 3ee9d073c15c46756c8e670ef7342849.dir
+      size: 8240654
+      nfiles: 9
     - path: data/processed
       hash: md5
       md5: 6e317b5482e72dd0cf35c431a4161f1c.dir
@@ -55,21 +55,43 @@ stages:
       nfiles: 2
     - path: src/components/experiment_splitter.py
       hash: md5
-      md5: 447c89deaa1a541fc7430f6cb699185c
-      size: 6050
+      md5: 39fbda21bf3ce5456ec4fa5473e9137a
+      size: 6039
   ml_model_trainer:
     cmd: python src/pipeline/xgboost_training.py
     deps:
     - path: artifacts
       hash: md5
-      md5: 539751ccf80dbc679e7ebf1d1a07595b.dir
-      size: 4181619
-      nfiles: 5
+      md5: 3ee9d073c15c46756c8e670ef7342849.dir
+      size: 8240654
+      nfiles: 9
     - path: configs/data_constants_config.py
       hash: md5
       md5: 61181bc672e54919a1ffa4844e6718ca
       size: 216
     - path: src/pipeline/xgboost_training.py
       hash: md5
-      md5: a74c3e92b1e0b9181326183f4f391725
-      size: 2285
+      md5: 7ed79d3fa944e868f3b3a4ffd0fdb78d
+      size: 2281
+    outs:
+    - path: models/xgboost_model.pkl
+      hash: md5
+      md5: 0775646a8e5be8214b2d61e084766f00
+      size: 151904
+  conformal_calibrator:
+    cmd: python src/components/conformal_calibration.py
+    deps:
+    - path: artifacts
+      hash: md5
+      md5: 59a5bc3a4e66c344e548b54b234c7863.dir
+      size: 8272179
+      nfiles: 11
+    - path: models
+      hash: md5
+      md5: bab0863ba8c55330f6964825de49bd3f.dir
+      size: 151904
+      nfiles: 1
+    - path: src/components/conformal_calibration.py
+      hash: md5
+      md5: 5d50404aaca6acda396db7ce48370bda
+      size: 5654
