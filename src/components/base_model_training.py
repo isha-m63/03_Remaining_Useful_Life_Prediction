@@ -85,7 +85,7 @@ class ModelTrainer:
             top5.to_csv(self.model_trainer_config.top5_results_path, index=False)
             logging.info("Top-5 models saved to %s", self.model_trainer_config.top5_results_path)
 
-            print("\nTop-5 models (ranked by RMSE → MAE → R²):")
+            print("\nTop-5 models (ranked by RMSE - MAE - R²):")
             print(top5.to_string(index=False))
 
             # --- threshold check on RMSE instead of R² ---
@@ -93,7 +93,7 @@ class ModelTrainer:
             print(f"\nBest model : {best_model_name}")
             print(f"  test RMSE: {best_metrics['test_rmse']:.4f}")
             print(f"  test MAE : {best_metrics['test_mae']:.4f}")
-            print(f"  test R²  : {best_metrics['test_r2']:.4f}")
+            print(f"  test R2  : {best_metrics['test_r2']:.4f}")
 
             if best_metrics["test_r2"] < 0.6:
                 raise CustomException("No best model found — R² below 0.6")

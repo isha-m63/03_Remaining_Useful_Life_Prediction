@@ -35,19 +35,37 @@ stages:
       md5: d35ae300688842f684eb5527c7163e2d
       size: 7935
     outs:
-    - path: artifacts
+    - path: artifacts/X_test_processed.csv
       hash: md5
-      md5: 539751ccf80dbc679e7ebf1d1a07595b.dir
-      size: 4181619
-      nfiles: 5
+      md5: cc72b115791e25495df413dd94c4df66
+      size: 19833
+    - path: artifacts/X_train_processed.csv
+      hash: md5
+      md5: 19508f8d78e60e378fe73f6966de2831
+      size: 4086842
+    - path: artifacts/preprocessor.pkl
+      hash: md5
+      md5: 3f3b0ed2936c1543dfb4df98c6b515f9
+      size: 3087
+    - path: artifacts/y_test.csv
+      hash: md5
+      md5: d31637aed8d3d7a4ca69516ec137174b
+      size: 333
+    - path: artifacts/y_train.csv
+      hash: md5
+      md5: 4ba16dcaf68683c644a37b8bbe6c6a90
+      size: 71524
   experiment_splitter:
     cmd: python src/components/experiment_splitter.py
     deps:
-    - path: artifacts
+    - path: artifacts/X_train_processed.csv
       hash: md5
-      md5: 3ee9d073c15c46756c8e670ef7342849.dir
-      size: 8240654
-      nfiles: 9
+      md5: 19508f8d78e60e378fe73f6966de2831
+      size: 4086842
+    - path: artifacts/y_train.csv
+      hash: md5
+      md5: 4ba16dcaf68683c644a37b8bbe6c6a90
+      size: 71524
     - path: data/processed
       hash: md5
       md5: 6e317b5482e72dd0cf35c431a4161f1c.dir
@@ -57,6 +75,23 @@ stages:
       hash: md5
       md5: 39fbda21bf3ce5456ec4fa5473e9137a
       size: 6039
+    outs:
+    - path: artifacts/X_cal.csv
+      hash: md5
+      md5: e0d3b8b26076aa860a48a3c2686fad71
+      size: 744459
+    - path: artifacts/X_train_proper.csv
+      hash: md5
+      md5: 20fd92ea2ad4cff979e62951f52512a5
+      size: 3243048
+    - path: artifacts/y_cal.csv
+      hash: md5
+      md5: c5cad126726860da5a9e5cafaaf00341
+      size: 13212
+    - path: artifacts/y_train_proper.csv
+      hash: md5
+      md5: 48e59aca6c5f12fba92bf500b5684eb7
+      size: 58316
   ml_model_trainer:
     cmd: python src/pipeline/xgboost_training.py
     deps:

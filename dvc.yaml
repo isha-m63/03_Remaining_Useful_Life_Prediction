@@ -16,33 +16,50 @@ stages:
         - configs/data_constants_config.py 
         - src/components/data_transformation.py
       outs:
-        - artifacts
+        - artifacts/X_train_processed.csv   # specific files, not artifacts/
+        - artifacts/y_train.csv
+        - artifacts/X_test_processed.csv
+        - artifacts/y_test.csv
+        - artifacts/preprocessor.pkl
      
 
   experiment_splitter:
       cmd: python src/components/experiment_splitter.py
       deps: 
         - data/processed
-        - artifacts
+        - artifacts/X_train_processed.csv   
+        - artifacts/y_train.csv
         - src/components/experiment_splitter.py
-      
+      outs: 
+        - artifacts/X_train_proper.csv      
+        - artifacts/y_train_proper.csv
+        - artifacts/X_cal.csv
+        - artifacts/y_cal.csv
+        
 
   ml_model_trainer:
-      cmd: python src/pipeline/xgboost_training.py
-      deps:
-        - artifacts
-        - configs/data_constants_config.py
-        - src/pipeline/xgboost_training.py
-      outs:
-        -  models/xgboost_model.pkl
-      
+    cmd: python src/pipeline/xgboost_training.py
+    deps:
+      - artifacts/X_train_proper.csv
+      - artifacts/y_train_proper.csv
+      - configs/data_constants_config.py
+      - src/pipeline/xgboost_training.py
+    outs:
+      - models/xgboost_model.pkl
+
 
   conformal_calibrator:
-      cmd: python src/components/conformal_calibration.py
-      deps:
-        - models
-        - artifacts
-        - src/components/conformal_calibration.py
+    cmd: python src/components/conformal_calibration.py
+    deps:
+      - models/xgboost_model.pkl
+      - artifacts/X_cal.csv
+      - artifacts/y_cal.csv
+      - artifacts/X_test_processed.csv
+      - artifacts/y_test.csv
+      - src/components/conformal_calibration.py
+    outs:
+      - artifacts/residuals.pkl          
+      - artifacts/conformal_results.csv
 
 
 
