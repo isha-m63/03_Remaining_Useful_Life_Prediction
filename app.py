@@ -26,3 +26,15 @@ from pydantic import BaseModel
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(message)s",)
 logger = logging.getLogger(__name__)
+
+artifacts = {}
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Loading artifacts...")
+    with open("artifacts/preprocessor.pkl", "rb") as f:
+        artifacts["preprocessor"] = pickle.load(f)
+    with open("models/xgboost_model.pkl", "rb") as f:
+        artifacts["model"] = pickle.load(f)
+    with open("artifacts/residuals.pkl", "rb") as f:
+        residuals = pickle.load(f)
