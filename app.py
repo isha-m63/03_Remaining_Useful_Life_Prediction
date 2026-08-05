@@ -23,10 +23,12 @@ import pandas as pd
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from configs.data_constants_config import ALPHA
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(message)s",)
 logger = logging.getLogger(__name__)
 
+#Artifacts dictionary to hold the loaded model and preprocessor
 artifacts = {}
 
 @asynccontextmanager
@@ -38,3 +40,28 @@ async def lifespan(app: FastAPI):
         artifacts["model"] = pickle.load(f)
     with open("artifacts/residuals.pkl", "rb") as f:
         residuals = pickle.load(f)
+
+    alpha = ALPHA
+    n = len(residuals)
+    level = min(np.ceil((1 - alpha) * (n + 1)) / n, 1.0)
+    artifacts["q_hat"] = float(np.quantile(residuals, level))
+    logger.info(f"q_hat = {artifacts['q_hat']:.4f}")
+    logger.info("Ready.")
+    yield
+
+    app = FastAPI(title="RUL Prediction API", lifespan=lifespan)
+
+
+#Schema for the input data
+class PredictionRequest(BaseModel):
+    # These must match the column names your preprocessor was trained on
+    # Update to match your actual feature names
+    features: dict[str, float]
+
+class PredictionResponse(BaseModel):
+    rul_prediction: float
+    lower_bound: float
+    upper_bound: float
+    interval_width: float
+
+#Routes
