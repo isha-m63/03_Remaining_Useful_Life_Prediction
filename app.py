@@ -16,52 +16,50 @@ What this file does NOT do:
 
 import pickle
 import logging
-from contextlib import asynccontextmanager
-
+import dill
+import os
 import numpy as np
 import pandas as pd
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from pathlib import Path
 from pydantic import BaseModel
 from configs.data_constants_config import ALPHA
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(message)s",)
 logger = logging.getLogger(__name__)
 
-#Artifacts dictionary to hold the loaded model and preprocessor
-artifacts = {}
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    logger.info("Loading artifacts...")
-    with open("artifacts/preprocessor.pkl", "rb") as f:
-        artifacts["preprocessor"] = pickle.load(f)
-    with open("models/xgboost_model.pkl", "rb") as f:
-        artifacts["model"] = pickle.load(f)
-    with open("artifacts/residuals.pkl", "rb") as f:
-        residuals = pickle.load(f)
+#Model store - loaded once at startup, reused for every request
+ 
+class ModelStore:
+    """Holds all artifacts needed for inference."""
+    preprocessor = None    # sklearn Pipeline (scaler + PCA)
+    model = None           # XGBoost 
+    q_hat: float = None    # conformal quantile for interval construction
+    feature_names: list[str] = None   # column order expected by preprocessor
+ 
+model_store = ModelStore()
 
-    alpha = ALPHA
-    n = len(residuals)
-    level = min(np.ceil((1 - alpha) * (n + 1)) / n, 1.0)
-    artifacts["q_hat"] = float(np.quantile(residuals, level))
-    logger.info(f"q_hat = {artifacts['q_hat']:.4f}")
-    logger.info("Ready.")
-    yield
-
-    app = FastAPI(title="RUL Prediction API", lifespan=lifespan)
-
-
-#Schema for the input data
-class PredictionRequest(BaseModel):
-    # These must match the column names your preprocessor was trained on
-    # Update to match your actual feature names
-    features: dict[str, float]
-
-class PredictionResponse(BaseModel):
-    rul_prediction: float
-    lower_bound: float
-    upper_bound: float
-    interval_width: float
-
-#Routes
+def load_artifacts() -> None:
+    """
+    Load all pkl artifacts into memory.
+    Called once at server startup via the lifespan hook.
+ 
+    Why dill instead of pickle?
+        dill can serialize lambda functions, closures, and some sklearn
+        objects that standard pickle can't. If your preprocessor or model
+        was saved with dill, you must load with dill. Harmless if not.
+    """
+    artifacts_dir = Path(os.getenv("ARTIFACTS_DIR", "artifacts"))
+    models_dir    = Path(os.getenv("MODELS_DIR", "models"))
+ 
+    logger.info(f"Loading artifacts from {artifacts_dir} and {models_dir}")
+ 
+    with open(artifacts_dir / "preprocessor.pkl", "rb") as f:
+        model_store.preprocessor = dill.load(f)
+    logger.info("Preprocessor loaded")
+ 
+    with open(models_dir / "xgboost_model.pkl", "rb") as f:
+        model_store.model = dill.load(f)
+    logger.info("Model loaded")
