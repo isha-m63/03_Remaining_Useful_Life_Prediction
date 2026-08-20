@@ -95,11 +95,14 @@ stages:
   ml_model_trainer:
     cmd: python src/pipeline/xgboost_training.py
     deps:
-    - path: artifacts
+    - path: artifacts/X_train_proper.csv
       hash: md5
-      md5: 3ee9d073c15c46756c8e670ef7342849.dir
-      size: 8240654
-      nfiles: 9
+      md5: 20fd92ea2ad4cff979e62951f52512a5
+      size: 3243048
+    - path: artifacts/y_train_proper.csv
+      hash: md5
+      md5: 48e59aca6c5f12fba92bf500b5684eb7
+      size: 58316
     - path: configs/data_constants_config.py
       hash: md5
       md5: 61181bc672e54919a1ffa4844e6718ca
@@ -116,17 +119,36 @@ stages:
   conformal_calibrator:
     cmd: python src/components/conformal_calibration.py
     deps:
-    - path: artifacts
+    - path: artifacts/X_cal.csv
       hash: md5
-      md5: 59a5bc3a4e66c344e548b54b234c7863.dir
-      size: 8272179
-      nfiles: 11
-    - path: models
+      md5: e0d3b8b26076aa860a48a3c2686fad71
+      size: 744459
+    - path: artifacts/X_test_processed.csv
       hash: md5
-      md5: bab0863ba8c55330f6964825de49bd3f.dir
+      md5: cc72b115791e25495df413dd94c4df66
+      size: 19833
+    - path: artifacts/y_cal.csv
+      hash: md5
+      md5: c5cad126726860da5a9e5cafaaf00341
+      size: 13212
+    - path: artifacts/y_test.csv
+      hash: md5
+      md5: d31637aed8d3d7a4ca69516ec137174b
+      size: 333
+    - path: models/xgboost_model.pkl
+      hash: md5
+      md5: 0775646a8e5be8214b2d61e084766f00
       size: 151904
-      nfiles: 1
     - path: src/components/conformal_calibration.py
       hash: md5
       md5: 5d50404aaca6acda396db7ce48370bda
       size: 5654
+    outs:
+    - path: artifacts/conformal_results.csv
+      hash: md5
+      md5: 48c8d7ee0b8c3932612262c72e29277f
+      size: 89
+    - path: artifacts/residuals.pkl
+      hash: md5
+      md5: 9da4187a0989732bc1a8e732bb890cfe
+      size: 31436
