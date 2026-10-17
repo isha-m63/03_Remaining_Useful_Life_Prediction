@@ -3,18 +3,18 @@
 ## Requirements
 - Python 3.10 (development) or 3.11 (Docker images)
 - `pip`; Docker if you want to run the containers
-- Optionally DVC (already in `requirements.txt`)
+- DVC and MLflow for the training pipeline (in `requirements-dev.txt`)
 
 ## Install
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt     # runtime + training/testing extras
 ```
 
-`requirements.txt` is a full `pip freeze` and its first line is an editable install of this repo from GitHub. If that
-line causes trouble, delete it and run `pip install -e .` instead. For the demo alone,
-`pip install -r requirements-demo.txt` is enough.
+`requirements.txt` lists only the runtime dependencies (demo + API + inference), as version ranges. The trained
+pickles need the same scikit-learn / xgboost major.minor, so those two are bounded. `requirements-dev.txt` adds DVC,
+MLflow, seaborn, pytest and friends. For the demo alone, `pip install -r requirements.txt` is enough.
 
 ## Data
 

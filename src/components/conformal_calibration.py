@@ -96,7 +96,19 @@ class ConformalCalibrator:
         except Exception as e:
             raise CustomException(e, sys)
 
-     #Evaluation
+    def predict_interval(self, model, X: pd.DataFrame, alpha: float = ALPHA):
+        """Point prediction +/- conformal quantile; returns (lower, upper) arrays."""
+        try:
+            if self.residuals is None:
+                self.load_residuals()
+            q_hat = self.compute_quantile(alpha)
+            y_pred = model.predict(X)
+            return y_pred - q_hat, y_pred + q_hat
+
+        except Exception as e:
+            raise CustomException(e, sys)
+
+    #Evaluation
     def evaluate_conformal_intervals( self, model, X_test: pd.DataFrame, y_test: pd.Series, 
                                      alpha: float = ALPHA, save_path: str | None = None) -> pd.DataFrame:
 

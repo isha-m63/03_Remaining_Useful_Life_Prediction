@@ -19,22 +19,28 @@ docker build -t rul-demo .
 docker run -p 7860:7860 rul-demo       # http://localhost:7860
 ```
 
-The `Dockerfile` uses `python:3.11-slim`, installs `libgomp1` (needed by XGBoost) and `requirements-demo.txt`, copies
-only `streamlit_app.py` and `demo_assets/`, and runs as a non-root user (uid 1000, as Hugging Face requires).
+The `Dockerfile` uses `python:3.11-slim`, installs `libgomp1` (needed by XGBoost) and `requirements.txt`, copies
+only `streamlit_app.py` and `demo_assets/`, and runs as a non-root user (uid 1000).
 
-## Hugging Face Space
+## Streamlit Community Cloud
+
+Create an app from this repository: branch `main`, main file `streamlit_app.py`, Python 3.11. It installs
+`requirements.txt` and reads the bundled `demo_assets/`; nothing needs to be trained first.
+
+## FastAPI server
+
+`app.py` loads the preprocessor, XGBoost model and calibration residuals once at startup (through
+`src/pipeline/predict_pipeline.py`) and exposes:
+
+- `GET /health`
+- `POST /predict` with `{"sensor_readings": [14 floats], "alpha": 0.1}` (optional `alpha`), returning
+  `rul_prediction`, `lower_bound`, `upper_bound`, `interval_width` and `confidence_level`. The sensor order is listed by
+  `/health` and in `FEATURE_COLS`. Interactive docs are at `/docs`.
 
 ```bash
-export HF_TOKEN=hf_xxx                 # token with write access
-python scripts/deploy_space.py <username>/<space-name>
+docker build -f Dockerfile.api -t rul-api .
+docker run -p 8000:8000 rul-api
 ```
 
-The script creates a public Docker Space and uploads only the `Dockerfile`, `requirements-demo.txt`,
-`streamlit_app.py`, `demo_assets/` and `deploy/space_README.md` (as the Space's `README.md`).
-
-## FastAPI server (work in progress)
-
-`app.py` and `Dockerfile.api` are intended to serve predictions over HTTP. Currently `app.py` only defines the model
-store and an artifact loader; it has no routes yet. `Dockerfile.api` is a two-stage build on `python:3.11-slim` that
-copies `app.py`, `src/`, `artifacts/` and `models/` and runs `uvicorn app:app` on port 8000. Artifact directories can
-be overridden with `ARTIFACTS_DIR` and `MODELS_DIR`. See [known-issues.md](known-issues.md).
+`Dockerfile.api` runs `uvicorn app:app` on port 8000 with `ARTIFACTS_DIR=MODELS_DIR=demo_assets`. Outside Docker the
+defaults are `artifacts/` and `models/`. Tests live in `tests/` (`pytest`).

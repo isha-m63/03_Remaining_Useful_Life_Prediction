@@ -60,12 +60,5 @@ class DataIngestion:
         
 
 if __name__ == "__main__":
-    obj = DataIngestion()
-    train_set, test_set = obj.inititiate_data_ingestion()
- 
-    data_transformation = DataTransformation()
-    X_train, y_train, X_test, y_test = data_transformation.initiate_data_transformation(
-        train_data_raw_csv_path=train_set,
-        test_data_raw_csv_path=test_set,
-        rul_path=data_transformation.data_transformation_config.rul_path,
-    )
+    #Data transformation is a separate DVC stage (src/components/data_transformation.py)
+    DataIngestion().inititiate_data_ingestion()

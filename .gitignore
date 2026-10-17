@@ -142,4 +142,4 @@ artifacts/*
 # Demo bundle (small, intentionally tracked so the Hugging Face Space can be built from it)
 !demo_assets/
 !demo_assets/**
-!requirements-demo.txt
+!requirements*.txt

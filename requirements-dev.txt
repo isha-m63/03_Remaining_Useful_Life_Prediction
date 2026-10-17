@@ -1,0 +1,8 @@
+# Training / experimentation / testing extras. Install with: pip install -r requirements-dev.txt
+-r requirements.txt
+dvc
+mlflow
+seaborn
+ipykernel
+pytest
+httpx

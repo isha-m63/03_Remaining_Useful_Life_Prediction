@@ -41,6 +41,11 @@ class XGBoostModelTrainer:
             xgboost =  xgboost_model.fit(X_train, y_train)
 
             logging.info("Training completed")
+
+            #Report held-out performance (the test set is NOT used for fitting)
+            y_pred = xgboost.predict(X_test)
+            rmse = mean_squared_error(y_test, y_pred) ** 0.5
+            logging.info("XGBoost test RMSE = %.3f | R2 = %.4f", rmse, r2_score(y_test, y_pred))
             
             # Save the trained object as 'xgboost_model.pkl'
             save_object(

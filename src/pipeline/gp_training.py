@@ -40,7 +40,7 @@ class GPModelTrainer:
 
             #Downsampling to prevent OOM (Killed) crash for large datasets
             if len(X_train_gp) > 2500:
-                step = 5
+                step = DOWNSAMPLING_STEP
                 X_train_gp = X_train_gp.iloc[::step].reset_index(drop=True)
                 y_train_gp = y_train_gp[::step]
 
@@ -53,7 +53,11 @@ class GPModelTrainer:
                 len(X_train_gp), X_train_gp.shape[1])
 
             # Tuned kernel (replace values below with your notebook's best values if different)
-            length_scales = [LENGTH_SCALES] * X_train_gp.shape[1]
+            n_features = X_train_gp.shape[1]
+            length_scales = (list(LENGTH_SCALES) * n_features if len(LENGTH_SCALES) == 1
+                             else list(LENGTH_SCALES))
+            if len(length_scales) != n_features:
+                raise ValueError(f"LENGTH_SCALES must have 1 or {n_features} entries, got {len(LENGTH_SCALES)}")
 
             kernel = (
                 ConstantKernel(constant_value=100.0)

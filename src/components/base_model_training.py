@@ -44,8 +44,6 @@ class ModelTrainer:
                 len(X_train), X_train.shape[1],
             )
 
-            #X_train, y_train, X_test, y_test = #INCOMPLETE HERE
-
             models = {
                 "Linear Regression": LinearRegression(),
                 "Random Forest": RandomForestRegressor(),
