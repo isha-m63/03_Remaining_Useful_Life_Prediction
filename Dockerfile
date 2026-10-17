@@ -14,9 +14,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY streamlit_app.py .
+COPY configs/ ./configs/
+COPY src/ ./src/
 COPY demo_assets/ ./demo_assets/
 
-RUN useradd -m -u 1000 appuser && chown -R appuser /app
+RUN useradd -m -u 1000 appuser && mkdir -p /app/logs && chown -R appuser /app
 USER appuser
 
 EXPOSE 7860

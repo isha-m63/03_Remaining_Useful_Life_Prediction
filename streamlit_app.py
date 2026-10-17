@@ -5,31 +5,28 @@ Streamlit demo: Remaining Useful Life (RUL) prediction for turbofan engines
 Pipeline: 14 sensors -> StandardScaler -> PCA(10) -> XGBoost -> RUL
 Interval: point prediction +/- conformal quantile of calibration residuals.
 """
+import os
 from pathlib import Path
-import pickle
+
+# The bundled, git-tracked copy of the trained artifacts (set before the pipeline reads its config)
+ASSETS = Path(__file__).parent / "demo_assets"
+os.environ.setdefault("ARTIFACTS_DIR", str(ASSETS))
+os.environ.setdefault("MODELS_DIR", str(ASSETS))
 
 import numpy as np
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 
-ASSETS = Path(__file__).parent / "demo_assets"
-RUL_CAP = 125
-DROP_SENSORS = ["s1", "s5", "s6", "s10", "s16", "s18", "s19"]
-FEATURE_COLS = [f"s{i}" for i in range(1, 22) if f"s{i}" not in DROP_SENSORS]
+from configs.data_constants_config import RUL_CAP
+from src.pipeline.predict_pipeline import FEATURE_COLS, PredictPipeline
 
 st.set_page_config(page_title="Turbofan RUL Prediction", page_icon="✈️", layout="wide")
 
 
 @st.cache_resource
-def load_models():
-    with open(ASSETS / "preprocessor.pkl", "rb") as f:
-        pre = pickle.load(f)
-    with open(ASSETS / "xgboost_model.pkl", "rb") as f:
-        model = pickle.load(f)
-    with open(ASSETS / "residuals.pkl", "rb") as f:
-        residuals = np.asarray(pickle.load(f), dtype=float)
-    return pre, model, residuals
+def load_pipeline() -> PredictPipeline:
+    return PredictPipeline()
 
 
 @st.cache_data
@@ -39,18 +36,11 @@ def load_data():
     return test, rul
 
 
-def conformal_q(residuals: np.ndarray, alpha: float) -> float:
-    n = len(residuals)
-    level = min(np.ceil((1 - alpha) * (n + 1)) / n, 1.0)
-    return float(np.quantile(residuals, level))
+def predict(X_raw: pd.DataFrame) -> np.ndarray:
+    return load_pipeline().predict_frame(X_raw)["rul_prediction"].to_numpy()
 
 
-def predict(pre, model, X_raw: pd.DataFrame) -> np.ndarray:
-    pcs = pre.transform(X_raw[FEATURE_COLS])
-    return np.clip(model.predict(pd.DataFrame(pcs, columns=[f"PC{i+1}" for i in range(pcs.shape[1])])), 0, RUL_CAP)
-
-
-pre, model, residuals = load_models()
+pipeline = load_pipeline()
 test_df, rul_final = load_data()
 
 st.title("✈️ Turbofan Engine — Remaining Useful Life")
@@ -63,7 +53,7 @@ alpha = st.sidebar.slider(
     "Mis-coverage α", 0.02, 0.30, 0.10, 0.01,
     help="The interval is built to contain the true RUL at least (1 − α) of the time.",
 )
-q_hat = conformal_q(residuals, alpha)
+q_hat = pipeline.conformal_quantile(alpha)
 st.sidebar.metric("Target coverage", f"{(1 - alpha):.0%}")
 st.sidebar.metric("Interval half-width (cycles)", f"±{q_hat:.1f}")
 st.sidebar.markdown(
@@ -82,7 +72,7 @@ with tab_engine:
     max_cycle = int(eng_df["cycle"].max())
     obs_cycle = c1.slider("Observed up to cycle", int(eng_df["cycle"].min()), max_cycle, max_cycle)
 
-    preds = predict(pre, model, eng_df)
+    preds = predict(eng_df)
     true_final = float(min(rul_final.iloc[engine - 1], RUL_CAP))
     true_curve = np.minimum(rul_final.iloc[engine - 1] + (max_cycle - eng_df["cycle"].to_numpy()), RUL_CAP)
 
@@ -124,7 +114,7 @@ with tab_manual:
             s, lo_s - 0.1 * spread, hi_s + 0.1 * spread, float(seed[s]),
             step=spread / 200, key=f"{seed_engine}_{s}", format="%.4f",
         )
-    p = predict(pre, model, pd.DataFrame([vals]))[0]
+    p = predict(pd.DataFrame([vals]))[0]
     m1, m2 = st.columns(2)
     m1.metric("Predicted RUL (cycles)", f"{p:.0f}")
     m2.metric(f"{1 - alpha:.0%} interval", f"[{max(p - q_hat, 0):.0f}, {min(p + q_hat, RUL_CAP):.0f}]")
@@ -132,7 +122,7 @@ with tab_manual:
 # ---------------------------------------------------------------- Fleet overview
 with tab_fleet:
     last = test_df.sort_values("cycle").groupby("engine_id").tail(1).sort_values("engine_id")
-    yhat = predict(pre, model, last)
+    yhat = predict(last)
     y = np.minimum(rul_final.to_numpy(), RUL_CAP)
     inside = (y >= yhat - q_hat) & (y <= yhat + q_hat)
     rmse = float(np.sqrt(np.mean((y - yhat) ** 2)))

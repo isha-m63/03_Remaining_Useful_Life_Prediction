@@ -42,3 +42,19 @@ def test_api_roundtrip(last_cycle_row):
         r = client.post("/predict", json={"sensor_readings": last_cycle_row})
         assert r.status_code == 200 and "rul_prediction" in r.json()
         assert client.post("/predict", json={"sensor_readings": [1.0]}).status_code == 422
+
+
+def test_batch_and_single_paths_agree():
+    df = pd.read_csv("demo_assets/test_set_001.csv")
+    rows = df.groupby("engine_id").tail(1).head(5)
+    p = PredictPipeline()
+    batch = p.predict_frame(rows)
+    for i, (_, r) in enumerate(rows.iterrows()):
+        single = p.predict(r[FEATURE_COLS].tolist())
+        assert single["rul_prediction"] == pytest.approx(batch.iloc[i]["rul_prediction"])
+        assert single["upper_bound"] == pytest.approx(batch.iloc[i]["upper_bound"])
+
+
+def test_conformal_quantile_matches_saved_results():
+    q = PredictPipeline().conformal_quantile(0.1)
+    assert q == pytest.approx(31.21, abs=0.05)

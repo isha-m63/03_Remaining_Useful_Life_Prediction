@@ -70,35 +70,48 @@ class PredictPipeline:
         except Exception as e:
             raise CustomException(e, sys)
 
-    def predict(self, sensor_readings: list[float], alpha: float = ALPHA) -> dict:
-        """sensor_readings: the 14 informative sensor values, in FEATURE_COLS order."""
+    def predict_frame(self, X_raw: pd.DataFrame, alpha: float = ALPHA) -> pd.DataFrame:
+        """Vectorised inference. X_raw needs the FEATURE_COLS columns (extra columns are ignored).
+
+        Returns a DataFrame with columns rul_prediction, lower_bound, upper_bound (all clipped to [0, RUL_CAP]).
+        """
         try:
-            if len(sensor_readings) != len(FEATURE_COLS):
-                raise ValueError(f"Expected {len(FEATURE_COLS)} sensor values, got {len(sensor_readings)}.")
             if not 0.0 < alpha < 1.0:
                 raise ValueError(f"alpha must be in (0, 1), got {alpha}.")
+            missing = [c for c in FEATURE_COLS if c not in X_raw.columns]
+            if missing:
+                raise ValueError(f"Missing sensor columns: {missing}")
 
             #Step 1: raw sensors -> scaled -> PCA
-            X_raw = pd.DataFrame([sensor_readings], columns=FEATURE_COLS)
-            X_transformed = self.preprocessor.transform(X_raw)
+            X_transformed = self.preprocessor.transform(X_raw[FEATURE_COLS])
             X_df = pd.DataFrame(X_transformed, columns=[f"PC{i+1}" for i in range(X_transformed.shape[1])])
 
             #Step 2: point prediction + conformal interval (clipped to the valid RUL range)
-            lower_arr, upper_arr = self.calibrator.predict_interval(self.model, X_df, alpha)
-            point_pred = float(np.clip(self.model.predict(X_df)[0], 0, RUL_CAP))
-            lower = float(np.clip(lower_arr[0], 0, RUL_CAP))
-            upper = float(np.clip(upper_arr[0], 0, RUL_CAP))
-
-            logging.info("Prediction = %.1f  interval = [%.1f, %.1f]  width = %.1f",
-                         point_pred, lower, upper, upper - lower)
-
-            return {
-                "rul_prediction": point_pred,
-                "lower_bound": lower,
-                "upper_bound": upper,
-                "interval_width": upper - lower,
-                "confidence_level": 1 - alpha,
-            }
+            lower, upper = self.calibrator.predict_interval(self.model, X_df, alpha)
+            point = self.model.predict(X_df)
+            return pd.DataFrame({
+                "rul_prediction": np.clip(point, 0, RUL_CAP),
+                "lower_bound": np.clip(lower, 0, RUL_CAP),
+                "upper_bound": np.clip(upper, 0, RUL_CAP),
+            }, index=X_raw.index)
 
         except Exception as e:
             raise CustomException(e, sys)
+
+    def conformal_quantile(self, alpha: float = ALPHA) -> float:
+        """Half-width of the (unclipped) prediction interval for the given alpha."""
+        return float(self.calibrator.compute_quantile(alpha))
+
+    def predict(self, sensor_readings: list[float], alpha: float = ALPHA) -> dict:
+        """sensor_readings: the 14 informative sensor values, in FEATURE_COLS order."""
+        if len(sensor_readings) != len(FEATURE_COLS):
+            raise CustomException(ValueError(f"Expected {len(FEATURE_COLS)} sensor values, got {len(sensor_readings)}."), sys)
+        row = self.predict_frame(pd.DataFrame([sensor_readings], columns=FEATURE_COLS), alpha).iloc[0]
+        logging.info("Prediction = %.1f  interval = [%.1f, %.1f]", row.rul_prediction, row.lower_bound, row.upper_bound)
+        return {
+            "rul_prediction": float(row.rul_prediction),
+            "lower_bound": float(row.lower_bound),
+            "upper_bound": float(row.upper_bound),
+            "interval_width": float(row.upper_bound - row.lower_bound),
+            "confidence_level": 1 - alpha,
+        }
