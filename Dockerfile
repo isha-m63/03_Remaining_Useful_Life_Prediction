@@ -1,39 +1,24 @@
-#Steps involved:
-#1. Start with a base OS (FROM)
-#2. Install system tools (RUN apt-get)
-#3. Set a working directory (WORKDIR)
-#4. Copy dependency list (COPY requirements.txt)
-#5. Install Python packages (RUN pip install)
-#6. Copy your actual code (COPY)
-#7. Say which port to listen on (EXPOSE)
-#8. Say what command to run (CMD)
+# Demo image: Streamlit app for RUL prediction (used by the Hugging Face Docker Space)
+FROM python:3.11-slim
 
-#Stage 1 - Build image
-FROM python:3.11-slim AS builder
-WORKDIR /build
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-COPY requirements.txt .
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir --prefix=/install -r requirements.txt
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 
-
-#Stage 2 - Runtime image
-FROM python:3.11-slim AS runtime
 WORKDIR /app
 
-COPY --from=builder /install /usr/local
-COPY app.py .
-COPY src/ ./src/
-COPY artifacts/ ./artifacts/
-COPY models/ ./models/
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN useradd --create-home --shell /bin/bash appuser
+COPY requirements-demo.txt .
+RUN pip install --no-cache-dir -r requirements-demo.txt
+
+COPY streamlit_app.py .
+COPY demo_assets/ ./demo_assets/
+
+# HF Spaces runs the container as uid 1000
+RUN useradd -m -u 1000 appuser && chown -R appuser /app
 USER appuser
 
-EXPOSE 8000
-
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
- 
+EXPOSE 7860
+CMD ["streamlit", "run", "streamlit_app.py", "--server.port=7860", "--server.address=0.0.0.0", "--server.headless=true"]
